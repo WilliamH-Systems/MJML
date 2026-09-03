@@ -93,5 +93,5 @@ export const data: TemplateData = {
   cta_url: "https://github.com",
   cta_label: "Execute System Engine >_",
   footer: "system_runtime: 2026 // paradigm: man_with_machine // status: building",
-  gradient_image_url: "https://cdn.jsdelivr.net/gh/USER/MJML@main/template/dist/gradient.png",
+  gradient_image_url: "https://cdn.jsdelivr.net/gh/WilliamH-Systems/MJML@main/template/dist/gradient.png",
 };
