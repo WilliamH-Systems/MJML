@@ -1,1 +1,39 @@
+# Build artifacts
 node_modules/
+
+# Environment
+.env
+.env.local
+
+# KDE
+.directory
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
+
+# JetBrains IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Vim
+*.sw[a-p]
+*.s[a-v][a-z]
+Session.vim
+.netrwhist
+*~
+
+# Emacs
+*#
+.#*
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# TypeScript incremental build cache
+*.tsbuildinfo
