@@ -1,0 +1,11 @@
+{
+  "name": "mjml-templates",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "bun run build.ts"
+  },
+  "dependencies": {
+    "mjml": "^4.15.0"
+  }
+}
