@@ -1,11 +1,21 @@
 import { readFileSync, mkdirSync, writeFileSync } from "fs";
 import { join } from "path";
 import mjml2html from "mjml";
-import { data, type ContentBlock, type Section } from "./data";
+import type { ContentBlock, Section, TemplateData } from "./data.example";
 
-const TEMPLATE_PATH = join(import.meta.dir, "template", "index.mjml");
-const OUTPUT_DIR = join(import.meta.dir, "template", "dist");
-const OUTPUT_PATH = join(OUTPUT_DIR, "index.html");
+const SHELL_PATH = join(import.meta.dir, "shell.mjml");
+const GRADIENT_DIR = join(import.meta.dir, "dist");
+
+function resolveEmailSlug(): string {
+  const arg = process.argv.find((a) => a.startsWith("--email="));
+  const slug = arg?.slice("--email=".length).trim();
+  if (!slug) return "self-introduction";
+  if (slug.includes("..") || slug.includes("/") || slug.includes("\\")) {
+    console.error(`Invalid --email slug: ${slug}`);
+    process.exit(1);
+  }
+  return slug;
+}
 
 function generateTextBlock(block: Extract<ContentBlock, { type: "text" }>): string {
   return block.paragraphs
@@ -53,7 +63,7 @@ function generateAllSections(sections: Section[]): string {
   return sections.map(generateSection).join("\n\n        ");
 }
 
-function interpolate(template: string): string {
+function interpolate(template: string, data: TemplateData): string {
   const sectionsMjml = generateAllSections(data.sections);
 
   return template
@@ -81,7 +91,7 @@ function injectVmlGradient(html: string): string {
     .replace("</body>", `${vmlClosing}\n</body>`);
 }
 
-function postProcess(html: string): string {
+function postProcess(html: string, data: TemplateData): string {
   const gradientUrl = data.gradient_image_url;
 
   // Strip background-color from app-bg div (fixes Gmail Android gradient rewrites)
@@ -182,9 +192,17 @@ function deflate(data: Buffer): Buffer {
   return Buffer.concat([header, len, nlen, data]);
 }
 
-function build(): void {
-  const template = readFileSync(TEMPLATE_PATH, "utf-8");
-  const mjmlSource = interpolate(template);
+async function build(): Promise<void> {
+  const slug = resolveEmailSlug();
+  const emailDir = join(import.meta.dir, "..", "emails", slug);
+  const dataPath = join(emailDir, "data.ts");
+  const outputDir = join(emailDir, "dist");
+  const outputPath = join(outputDir, "index.html");
+
+  const { data } = (await import(dataPath)) as { data: TemplateData };
+
+  const shell = readFileSync(SHELL_PATH, "utf-8");
+  const mjmlSource = interpolate(shell, data);
 
   const { html, errors } = mjml2html(mjmlSource, {
     validationLevel: "soft",
@@ -196,19 +214,20 @@ function build(): void {
     process.exit(1);
   }
 
-  const finalHtml = postProcess(injectVmlGradient(html));
+  const finalHtml = postProcess(injectVmlGradient(html), data);
 
-  mkdirSync(OUTPUT_DIR, { recursive: true });
-  writeFileSync(OUTPUT_PATH, finalHtml, "utf-8");
+  mkdirSync(outputDir, { recursive: true });
+  writeFileSync(outputPath, finalHtml, "utf-8");
 
-  // Generate gradient.png
+  // Generate canonical gradient.png (tracked, served via CDN)
+  mkdirSync(GRADIENT_DIR, { recursive: true });
   const png = generateGradientPng();
-  const pngPath = join(OUTPUT_DIR, "gradient.png");
+  const pngPath = join(GRADIENT_DIR, "gradient.png");
   writeFileSync(pngPath, png);
 
   const sizeKb = (Buffer.byteLength(finalHtml) / 1024).toFixed(1);
-  console.log(`Built template/dist/index.html (${sizeKb} KB)`);
-  console.log(`Built template/dist/gradient.png (${png.length} bytes)`);
+  console.log(`Built emails/${slug}/dist/index.html (${sizeKb} KB)`);
+  console.log(`Built mjml-template/dist/gradient.png (${png.length} bytes)`);
 }
 
-build();
+await build();

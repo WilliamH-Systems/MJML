@@ -1,6 +1,13 @@
 # Build artifacts
 node_modules/
 
+# Private emails (per-email folders, never commit content)
+emails/*
+!emails/.gitkeep
+
+# Built email HTML (regenerated per email; gradient.png stays tracked)
+mjml-template/dist/index.html
+
 # Environment
 .env
 .env.local
